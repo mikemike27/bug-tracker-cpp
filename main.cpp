@@ -1,3 +1,6 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include <map>
 #include <vector>
 #include <chrono>
@@ -37,6 +40,8 @@ struct Task{
     TaskStatus task_status;
 };
 
+const string FILENAME = "UserDB.csv";
+
 std::map<string,UserInfo> userDB; //user database, pair user email and userInfo struct
 std::vector<Task> taskDB;
 
@@ -62,14 +67,99 @@ void mark_task_completed(Task& task, bool complete);
 Task* get_task_by_id(int targetId);
 void show_task(Task& targetTask);
 void show_task(bool wip);
+vector<string> split(const string& line, char delimiter);
+std::map<string,UserInfo> load_userDB();
+void write_to_userDB(const string& email, const UserInfo& data);
 
 int main(){
 
+    //load userDB from the csv file
+    userDB = load_userDB();
 
     print_main_menu();
 
 
     return 0;
+}
+
+vector<string> split(const string& line, char delimiter){
+
+    vector<string> tokens;
+
+    std::stringstream ss(line);
+    string token;
+
+    while(getline(ss, token, delimiter)){
+        //write_line(token);
+        tokens.push_back(token);
+    }
+
+    return tokens;
+
+}
+
+void write_to_userDB(const string& email, const UserInfo& data){
+
+    std::ofstream file(FILENAME, std::ios::app);
+
+    if(!file.is_open()){
+
+        write_line("Operation failed.");
+
+        return;
+    }
+
+    file << std::endl;
+    file << email;
+    file << ",";
+    file << data.userName;
+    file << ",";
+    file << data.password;
+    file << ",";
+    file << data.statusCode;
+
+    file.close();
+
+
+}
+
+std::map<string,UserInfo> load_userDB(){
+
+    std::map<string,UserInfo> data;
+
+    std::ifstream file(FILENAME);
+
+    if(!file.is_open()){
+
+        write_line("The csv file has failed to load.");
+
+        return data;
+
+    }
+
+    string line;
+    vector<string> columns;
+    string email;
+    UserInfo userInfo;
+
+    while(getline(file, line)){
+        
+        //write_line(line);
+        columns = split(line, ',');
+
+        email = columns[0];
+        userInfo.userName = columns[1];
+        userInfo.password = columns[2];
+        userInfo.statusCode = std::stoi(columns[3]);
+
+        data[email] = userInfo;
+
+    }
+
+    file.close();
+
+    return data;
+
 }
 
 void create_line_break(){
@@ -218,6 +308,8 @@ void signup(){
         new_user.statusCode = 0;
         
         userDB[email] = new_user;
+
+        write_to_userDB(email, new_user);
 
         write_line("User created.");
         print_main_menu(); //go back to main menu
@@ -711,3 +803,4 @@ void show_task(bool wip){
     }while(!taskFound);
 
 }
+
